@@ -2,7 +2,7 @@
 ###	#	
 ### # Project: 			#		KissManga.com - by The Highway 2013.
 ### # Author: 			#		The Highway
-### # Version:			#		v0.3.0
+### # Version:			#		v0.3.1
 ### # Description: 	#		http://www.KissManga.com
 ###	#	
 ### ############################################################################################################
@@ -872,10 +872,10 @@ def listLinks(section, url, showtitle='', showyear=''): ### Menu for Listing Hos
 	except: contentURL=''
 	try: fTitle=re.compile('<meta\s*itemprop="contentURL"\s*content="http://.+?(&title=.*?)"\s*/*>').findall(html)[0]
 	except: fTitle=''
-	if (len(contentURL) > 0):
-		contextMenuItems=[]; labs={}; labs['title']='[ Default URL ]' +'  [I]<-- Play This One Only[/I]'
-		pars={'img':pimg,'mode':'PlayVideo','url':contentURL,'title':'Default URL','studio':ptitle}
-		_addon.add_directory(pars,labs,img=img,fanart=fimg,is_folder=False,contextmenu_items=contextMenuItems)
+	#if (len(contentURL) > 0):
+	#	contextMenuItems=[]; labs={}; labs['title']='[ Default URL ]' +'  [I]<-- Play This One Only[/I]'
+	#	pars={'img':pimg,'mode':'PlayVideo','url':contentURL,'title':'Default URL','studio':ptitle}
+	#	_addon.add_directory(pars,labs,img=img,fanart=fimg,is_folder=False,contextmenu_items=contextMenuItems)
 	if (len(matches) > 0):
 		count=1; ItemCount=len(matches); #match=sorted(match, key=lambda item: (item[3],item[2],item[1]))
 		deb('No. of matches',str(ItemCount))
@@ -921,7 +921,7 @@ def listLinks(section, url, showtitle='', showyear=''): ### Menu for Listing Hos
 		try: play.play(pl) # url
 		except: t=''
 		return
-	set_view('list',addst('links-view')); eod()
+	set_view(ps('content_links'),addst('links-view')); eod()
 	### ################################################################
 
 def listLinks1(section, url, showtitle='', showyear=''): ### Menu for Listing Hosters (Host Sites of the actual Videos)
@@ -1310,7 +1310,7 @@ def listItems(section=_default_section_, url='', startPage='1', numOfPages='1', 
 			pars={'mode':'GetEpisodes','url':item_url,'img':img,'title':labs['title']}
 			_addon.add_directory(pars, labs, img=img, fanart=fimg, contextmenu_items=contextMenuItems, total_items=ItemCount)
 	else: deb('Error','no items found.')
-	set_view('tvshows',addst('anime-view')); eod(); return
+	set_view(ps('content_tvshows'),addst('anime-view')); eod(); return
 	################################################################################
 
 def Trailers_List(section, url, genre):
@@ -1677,14 +1677,26 @@ def listEpisodes(section, url, img='', season=''): #_param['img']
 		contextMenuItems=[]; labs={}; ep_url=_domain_url+ep_url
 		contextMenuItems.append((ps('cMI.showinfo.name'),ps('cMI.showinfo.url')))
 		#contextMenuItems.append(('Add - Library','XBMC.RunPlugin(%s?mode=%s&section=%s&title=%s&showtitle=%s&showyear=%s&url=%s&img=%s&season=%s&episode=%s&episodetitle=%s)' % ( sys.argv[0],'LibrarySaveEpisode',section, urllib.quote_plus(_param['title']), urllib.quote_plus(_param['showtitle']), urllib.quote_plus(_param['year']), urllib.quote_plus(ep_url), urllib.quote_plus(labs['thumbnail']), urllib.quote_plus(season_number), urllib.quote_plus(episode_number), urllib.quote_plus(episode_name) )))
-		labs['title']=ep_name.replace(' Episode',' [CR]Episode')
+		labs['title']=''+ep_name
+		if ('[CR]' not in labs['title']): labs['title']=labs['title'].replace(' The Movie',' [CR]The Movie')
+		if ('[CR]' not in labs['title']): labs['title']=labs['title'].replace(' Movie',' [CR]Movie')
+		if ('[CR]' not in labs['title']): labs['title']=labs['title'].replace(' Episode',' [CR]Episode')
+		if ('[CR]' not in labs['title']): labs['title']=labs['title'].replace(' OVA',' [CR]OVA')
+		if ('[CR]' not in labs['title']): labs['title']=labs['title'].replace(' _Special',' [CR]Special')
+		if ('[CR]' not in labs['title']): labs['title']=labs['title'].replace(' _Preview',' [CR]Preview')
 		if ('[CR]' in labs['title']): labs['title']=labs['title'].split('[CR]')[1]
+		labs['title']=labs['title'].replace(' '+ps('common_word2')+' Online','')
 		labs['title']=labs['title']+cFL('  ['+cFL(ep_date.replace('/',cFL('/','pink')),'blue')+']','pink')
+		try: (labs['month'],labs['day'],labs['year'])=ep_date.split('/')
+		except: labs['month']=''; labs['day']; labs['year']
+		labs['plot']=cFL(ep_name,'red')
+		labs['plot']+=cFL('[CR]Date Added:  ['+cFL(ep_date.replace('/',cFL('/','pink')),'blue')+'][CR]','pink'); labs['Date']=ep_date.replace('/','-')
+		labs['premiered']=ep_date.replace('/','-')
 		deb('Episode Name',labs['title']); deb('episode thumbnail',img)
 		pars={'mode':'GetLinks','img':img,'url':ep_url,'title':ep_name}
 		_addon.add_directory(pars,labs,img=img,fanart=img,contextmenu_items=contextMenuItems,total_items=ItemCount)
 		#
-	set_view('episodes',addst('episode-view')); eod() #set_view('episodes',ps('setview.episodes')); eod()
+	set_view(ps('content_episodes'),addst('episode-view')); eod() #set_view('episodes',ps('setview.episodes')); eod()
 
 def listSeasons(section, url, img=''): #_param['img']
 	xbmcplugin.setContent(int(sys.argv[1]),'seasons'); WhereAmI('@ the Seasons List for TV Show -- url: %s' % url); html=net.http_GET(url).content

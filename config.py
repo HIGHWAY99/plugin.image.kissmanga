@@ -28,6 +28,9 @@ def ps(x):
 		,'common_word': 				"Manga"
 		,'common_word2': 				"Read"
 		,'_addon_path_art': 		"art"
+		,'content_tvshows': 		"tvshows"
+		,'content_episodes': 		"pictures"
+		,'content_links': 			"list"
 		,'special.home.addons': 'special:'+os.sep+os.sep+'home'+os.sep+'addons'+os.sep
 		,'special.home': 				'special:'+os.sep+os.sep+'home'
 		,'img_kisslogo':				'http://kissmanga.com/Content/images/logo.png'
