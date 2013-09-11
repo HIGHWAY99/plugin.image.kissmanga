@@ -234,6 +234,115 @@ http://kissanime.com/RSS/Anime/[Folder Name for the Show]
 </rss>
 
 
+def listLinks_old(section, url, showtitle='', showyear=''): ### Menu for Listing Hosters (Host Sites of the actual Videos)
+	WhereAmI('@ the Link List: %s' % url); sources=[]; listitem=xbmcgui.ListItem()
+	if (url==''): return
+	try: html=net.http_GET(url).content
+	except: html=''
+	if (html==''): return
+	try: html=html.encode("ascii", "ignore")
+	except: t=''
+	#if (_debugging==True): print html
+	###( , re.MULTILINE | re.IGNORECASE | re.DOTALL)
+	if  ( section == 'tv'): ## TV Show ## Title (Year) - Info
+		match=re.compile(ps('LLinks.compile.show_episode.info'), re.MULTILINE | re.IGNORECASE | re.DOTALL).findall(html)[0] ### <title>Watch The Walking Dead Online for Free - Prey - S03E14 - 3x14 - SolarMovie</title>
+		if (_debugging==True): print match
+		if (match==None):  return
+		ShowYear=_param['year'] #ShowYear=showyear
+		ShowTitle=match[0].strip(); EpisodeTitle=match[1].strip(); Season=match[2].strip(); Episode=match[3].strip()
+		ShowTitle=HTMLParser.HTMLParser().unescape(ShowTitle); ShowTitle=ParseDescription(ShowTitle); ShowTitle=ShowTitle.encode('ascii', 'ignore'); ShowTitle=ShowTitle.decode('iso-8859-1'); EpisodeTitle=HTMLParser.HTMLParser().unescape(EpisodeTitle); EpisodeTitle=ParseDescription(EpisodeTitle); EpisodeTitle=EpisodeTitle.encode('ascii', 'ignore'); EpisodeTitle=EpisodeTitle.decode('iso-8859-1')
+		if ('<p id="plot_' in html):
+			ShowPlot=(re.compile(ps('LLinks.compile.show.plot'), re.MULTILINE | re.IGNORECASE | re.DOTALL).findall(html)[0]).strip(); ShowPlot=HTMLParser.HTMLParser().unescape(ShowPlot); ShowPlot=ParseDescription(ShowPlot); ShowPlot=ShowPlot.encode('ascii', 'ignore'); ShowPlot=ShowPlot.decode('iso-8859-1')
+		else: ShowPlot=''
+		match=re.compile(ps('LLinks.compile.imdb.url_id'), re.MULTILINE | re.IGNORECASE | re.DOTALL).findall(html)[0]
+		if (_debugging==True): print match
+		(IMDbURL,IMDbID)=match; IMDbURL=IMDbURL.strip(); IMDbID=IMDbID.strip(); My_infoLabels={ "Studio": ShowTitle+'  ('+ShowYear+'):  '+Season+'x'+Episode+' - '+EpisodeTitle, "Title": ShowTitle, "ShowTitle": ShowTitle, "Year": ShowYear, "Plot": ShowPlot, 'Season': Season, 'Episode': Episode, 'EpisodeTitle': EpisodeTitle, 'IMDbURL': IMDbURL, 'IMDbID': IMDbID, 'IMDb': IMDbID }; listitem.setInfo(type="Video", infoLabels=My_infoLabels )
+	else:	#################### Movie ## Title (Year) - Info
+		match=re.compile(ps('LLinks.compile.show.title_year')).findall(html)[0]
+		if (_debugging==True): print match
+		if (match==None): return
+		ShowYear=match[1].strip(); ShowTitle=match[0].strip(); ShowTitle=HTMLParser.HTMLParser().unescape(ShowTitle); ShowTitle=ParseDescription(ShowTitle); ShowTitle=ShowTitle.encode('ascii', 'ignore'); ShowTitle=ShowTitle.decode('iso-8859-1'); ShowPlot=(re.compile(ps('LLinks.compile.show.plot'), re.MULTILINE | re.IGNORECASE | re.DOTALL).findall(html)[0]).strip(); ShowPlot=HTMLParser.HTMLParser().unescape(ShowPlot); ShowPlot=ParseDescription(ShowPlot); ShowPlot=ShowPlot.encode('ascii', 'ignore'); ShowPlot=ShowPlot.decode('iso-8859-1'); match=re.compile(ps('LLinks.compile.imdb.url_id'), re.MULTILINE | re.IGNORECASE | re.DOTALL).findall(html)[0]
+		if (_debugging==True): print match
+		(IMDbURL,IMDbID)=match; IMDbURL=IMDbURL.strip(); IMDbID=IMDbID.strip(); My_infoLabels={ "Studio": ShowTitle+'  ('+ShowYear+')', "Title": ShowTitle, "ShowTitle": ShowTitle, "Year": ShowYear, "Plot": ShowPlot, 'IMDbURL': IMDbURL, 'IMDbID': IMDbID, 'IMDb': IMDbID }; listitem.setInfo(type="Video", infoLabels=My_infoLabels )
+	### Both -Movies- and -TV Shows- ### Hosters
+	###( , re.MULTILINE | re.IGNORECASE | re.DOTALL)
+	match=re.compile(ps('LLinks.compile.hosters'), re.MULTILINE | re.DOTALL).findall(html)
+	if (len(match) > 0):
+		count=1
+		match=sorted(match, key=lambda item: (item[3],item[2],item[1]))
+		ItemCount=len(match) # , total_items=ItemCount
+		#print match
+		for url, host, quality, age in match:
+			host=host.strip(); quality=quality.strip(); name=str(count)+". "+host+' - [[B]'+quality+'[/B]] - ([I]'+age+'[/I])'
+			#if urlresolver.HostedMediaFile(host=host, media_id='xxx'):
+			if (host is not ''):
+				img=ps('Hosters.icon.url')+host; My_infoLabels['quality']=quality; My_infoLabels['age']=age; My_infoLabels['host']=host
+				pars={'section': section, 'img': _param['img'], 'mode': 'PlayVideo', 'url': url, 'quality': quality, 'age': age, 'infoLabels': My_infoLabels, 'listitem': listitem}
+				contextMenuItems=[]; 
+				#contextMenuItems.append(('Show Information', 			'XBMC.Action(Info)'))
+				pars2=pars; pars2['mode']='Download'
+				pars2['studio']=My_infoLabels['Studio']
+				pars2['ShowTitle']=My_infoLabels['ShowTitle']
+				pars2['Title']=My_infoLabels['Title']
+				#deb('plugin url for download',_addon.build_plugin_url(pars2))
+				contextMenuItems.append(('Download', 'XBMC.RunPlugin(%s)' % _addon.build_plugin_url(pars2)))
+				#contextMenuItems.append(('jDownloader', ps('cMI.jDownloader.addlink.url') % (urllib.quote_plus(url))))
+				pars['mode']='PlayVideo'
+				_addon.add_directory(pars, {'title':  name}, img=img, is_folder=False, contextmenu_items=contextMenuItems, total_items=ItemCount); count=count+1
+		set_view('list',addst('links-view')); eod()
+	else: set_view('list',addst('links-view')); eod(); return
+	### ################################################################
+
+
+def listLinks1(section, url, showtitle='', showyear=''): ### Menu for Listing Hosters (Host Sites of the actual Videos)
+	WhereAmI('@ the Link List: %s' % url); sources=[]; listitem=xbmcgui.ListItem()
+	if (url==''): return
+	try: html=net.http_GET(url).content
+	except: html=''
+	if (html==''): return
+	try: html=html.encode("ascii", "ignore")
+	except: t=''
+	html=messupText(html,True,True,True,False)
+	img=_param['img']
+	if (img==''): img=re.compile('<link\s*rel="image_src"\s*href="(http://.+?\.jpg)"').findall(html)[0].replace(' ','%20')
+	pimg=''+img
+	fimg=''+img
+	ptitle=_param['title']
+	#s='<a\s*\n*\s*href="(http://redirector.googlevideo.com/videoplayback.+?)"\s*\n*\s*>((\d+)x(\d+)\.([0-9A-Za-z]+))</a>'
+	s='lstImages\.push\("(http://.+?\..+?/.+?/[A-Za-z\-_]*(\d*)[A-Za-z\-_]*\.jpg\?imgmax=(\d+))"\);'
+	matches=re.compile(s, re.DOTALL).findall(html)
+	try: contentURL=re.compile('<meta\s*itemprop="contentURL"\s*content="(http://.+?)"\s*/*>').findall(html)[0]
+	except: contentURL=''
+	try: fTitle=re.compile('<meta\s*itemprop="contentURL"\s*content="http://.+?(&title=.*?)"\s*/*>').findall(html)[0]
+	except: fTitle=''
+	if (len(contentURL) > 0):
+		contextMenuItems=[]; labs={}; labs['title']='[ Default URL ]' +'  [I]<-- Play This One Only[/I]'
+		pars={'img':pimg,'mode':'PlayVideo','url':contentURL,'title':'Default URL','studio':ptitle}
+		_addon.add_directory(pars,labs,img=img,fanart=fimg,is_folder=False,contextmenu_items=contextMenuItems)
+	if (len(matches) > 0):
+		count=1; ItemCount=len(matches); #match=sorted(match, key=lambda item: (item[3],item[2],item[1]))
+		deb('No. of matches',str(ItemCount))
+		#print matches
+		MaxNoLinks=int(addst('linksmaxshown'))
+		#for mUrl,mName,mWidth,mHeight,mFileExt in matches:
+		for mUrl,mNo,imgmax in matches:
+			#if   (mFileExt.lower()=='mkv'): img=art('mkv') #'http://convertmkvtomp4.info/images/mkv.png'
+			#elif (mFileExt.lower()=='mp4'): img=art('mp4') #'http://zamzar.files.wordpress.com/2013/03/mp4.png?w=480'
+			#elif (mFileExt.lower()=='flv'): img=art('flv') #'http://images.wikia.com/fileformats/images/a/ab/Icon_FLV.png'
+			contextMenuItems=[]; labs={}
+			#if (fTitle not in mUrl): mUrl+=fTitle
+			pars={'img':pimg,'mode':'PlayManga','url':mUrl,'title':'Page '+str(count),'studio':ptitle}
+			deb('gv redirector url',mUrl)
+			#pars2={'img':img,'mode':'Download','url':url,'title':mName,'studio':ptitle}
+			#contextMenuItems.append(('Download', 'XBMC.RunPlugin(%s)' % _addon.build_plugin_url(pars2)))
+			#contextMenuItems.append(('jDownloader', ps('cMI.jDownloader.addlink.url') % (urllib.quote_plus(url))))
+			labs['title']='Page '+str(count)
+			_addon.add_directory(pars,labs,img=mUrl,fanart=mUrl,is_folder=False,contextmenu_items=contextMenuItems,total_items=ItemCount)
+			count=count+1
+	set_view('list',addst('links-view')); eod()
+	### ################################################################
+
+
 
 
 
